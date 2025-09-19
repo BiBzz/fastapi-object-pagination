@@ -1,0 +1,17 @@
+[project]
+name = "fastapi-object-pagination"
+version = "0.1.0"
+description = "Simple FastAPI pagination for SQLModel and Neontology"
+readme = "README.md"
+authors = [
+    { name = "Alexandre BERREBI", email = "alexandre.berrebi@businessagile.eu" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "neontology>=2",
+    "sqlmodel>=0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.7,<0.9.0"]
+build-backend = "uv_build"
