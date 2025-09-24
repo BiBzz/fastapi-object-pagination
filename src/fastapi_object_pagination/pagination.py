@@ -47,6 +47,7 @@ async def paginate(
     current_page: int = 1,
     items_by_page: int = 10,
     filters: dict | None = None,
+    ordering: list[str] | None = None,
 ) -> Page[M]:
     """
     Paginate a list of items from SQLModel.
@@ -57,12 +58,22 @@ async def paginate(
     :param async_session: The async SQL session.
     :param current_page: The current page number.
     :param items_by_page: The number of items to display per page.
+    :param filters: A dictionary of filters to apply to the query.
+    :param ordering: A list of fields to order the query by.
     :return: A Page object containing the paginated items and pagination metadata.
     """
     statement = select(model)
     if filters:
         for key, value in filters.items():
             statement = statement.where(getattr(model, key) == value)
+    if ordering:
+        for order in ordering:
+            key = order.lstrip("-")
+            if order[0] == "-":
+                ordering_key = getattr(model, key).desc()
+            else:
+                ordering_key = getattr(model, key).asc()
+            statement = statement.order_by(ordering_key)
     paginated_statement = statement.offset((current_page - 1) * items_by_page).limit(
         items_by_page
     )
