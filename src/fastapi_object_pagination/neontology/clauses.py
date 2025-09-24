@@ -1,4 +1,5 @@
 from typing import Any
+
 from neontology import BaseNode, BaseRelationship
 
 Clause = str

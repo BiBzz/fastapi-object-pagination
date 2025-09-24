@@ -4,12 +4,22 @@ version = "0.1.0"
 description = "Simple FastAPI pagination for SQLModel and Neontology"
 readme = "README.md"
 authors = [
-    { name = "Alexandre BERREBI", email = "alexandre.berrebi@businessagile.eu" }
+{ name = "Alexandre BERREBI", email = "alexandre.berrebi@businessagile.eu" },
 ]
 requires-python = ">=3.10"
-dependencies = [
-    "neontology>=2",
-    "sqlmodel>=0",
+
+[project.optional-dependencies]
+neontology = ["neontology>=2.2.2"]
+sqlmodel = ["sqlmodel>=0.0.25"]
+
+
+[dependency-groups]
+dev = ["pytest>=8.4.2"]
+
+[tool.pytest.ini_options]
+markers = [
+"neontology: tests aiming only 'neontology' ORM",
+"sqlmodel: tests aiming only 'sqlmodel' ORM",
 ]
 
 [build-system]
