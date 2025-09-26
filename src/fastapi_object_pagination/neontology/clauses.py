@@ -6,7 +6,7 @@ Clause = str
 Params = dict
 
 
-def _cypher_relation_to_match_clause(relation_class: BaseRelationship) -> Clause:
+async def _cypher_relation_to_match_clause(relation_class: BaseRelationship) -> Clause:
     """
     Convert a relationship to a MATCH clause for a query.
     Args:
@@ -22,7 +22,7 @@ def _cypher_relation_to_match_clause(relation_class: BaseRelationship) -> Clause
     return f" MATCH ({source.lower()}:{source})-[:{relation_class.__relationshiptype__}]-({target.lower()}:{target})"
 
 
-def _filters_to_where_clause(
+async def _filters_to_where_clause(
     filters: dict[tuple, str] | None = None,
 ) -> tuple[Clause, Params]:
     """Convert a dictionary of filters into a WHERE clause and parameter dictionary for a query.
@@ -88,7 +88,7 @@ def _filters_to_where_clause(
     return where_clause, params
 
 
-def _ordering_to_order_by_clause(model: BaseNode, ordering: list[str]) -> Clause:
+async def _ordering_to_order_by_clause(model: BaseNode, ordering: list[str]) -> Clause:
     """
     Convert ordering to ORDER BY clause.
     This function is used to convert ordering to ORDER BY clause.
@@ -109,7 +109,7 @@ def _ordering_to_order_by_clause(model: BaseNode, ordering: list[str]) -> Clause
     return order_by_clause
 
 
-def _prefixes(
+async def _prefixes(
     model: BaseNode,
     relationships: list[str] | None = None,
     filters: dict[str, Any] | None = None,
@@ -119,15 +119,15 @@ def _prefixes(
     cypher = f"MATCH ({alias}:{model.__primarylabel__})"
     if relationships:
         for relationship in relationships:
-            cypher += _cypher_relation_to_match_clause(relationship)
+            cypher += await _cypher_relation_to_match_clause(relationship)
     if filters:
-        where_clause, where_params = _filters_to_where_clause(filters)
+        where_clause, where_params = await _filters_to_where_clause(filters)
         cypher += where_clause
         params.update(where_params)
     return cypher, params
 
 
-def _postfixes(
+async def _postfixes(
     model: BaseNode,
     params: Params,
     ordering: list[str] | None = None,
@@ -136,7 +136,7 @@ def _postfixes(
 ) -> tuple[Clause, Params]:
     cypher = ""
     if ordering:
-        cypher += _ordering_to_order_by_clause(model, ordering)
+        cypher += await _ordering_to_order_by_clause(model, ordering)
     if offset is not None:
         cypher += " SKIP $skip"
         params["skip"] = offset

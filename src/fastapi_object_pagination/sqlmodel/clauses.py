@@ -1,38 +1,42 @@
+import asyncio
 from typing import Any
 
-from sqlalchemy import inspect
+from sqlalchemy import text
 from sqlalchemy.sql.expression import BinaryExpression
-from sqlmodel import SQLModel, and_, func, select
+from sqlmodel import SQLModel, and_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 Clause = BinaryExpression
-Params = dict[str, Any]
 
 
-def is_postgresql(session):
+async def is_postgresql(session: AsyncSession) -> bool:
     """Check if the current session uses PostgreSQL."""
-    dialect = inspect(session.bind).dialect.name
-    return dialect == "postgresql"
+    try:
+        version_str = await session.exec(text("SELECT version()"))
+        return "PostgreSQL" in str(version_str)
+    except Exception:
+        return False
 
 
-def get_in_clause(session, column, values):
+async def get_in_clause(session, column, values):
     """Return the appropriate IN/ANY clause based on the dialect."""
     from sqlalchemy.sql.expression import any_
 
     if not values:
         return column == False
 
-    if is_postgresql(session):
+    if await is_postgresql(session):
         return column == any_(values)  # ANY(ARRAY[...]) optimized for PostgreSQL
     else:
         return column.in_(values)  # IN (...) for SQLite/MySQL
 
 
-def _filters_to_where_clause(
+async def _filters_to_where_clause(
     session: AsyncSession,
+    model: SQLModel,
     filters: dict[tuple[type[SQLModel], str], Any] | None = None,
-) -> tuple[Clause | None, Params]:
-    """Convert a dictionary of filters into a WHERE clause and parameter dictionary for a query for SQLModel.
+) -> Clause | None:
+    """Convert a dictionary of filters into a WHERE clause for a query for SQLModel.
 
     Args:
         filters (dict | None): A dictionary of filters. Each key is a field name possibly followed
@@ -40,15 +44,14 @@ def _filters_to_where_clause(
                             the filter value. If None, returns an empty WHERE clause.
 
     Returns:
-        tuple: A tuple containing the WHERE clause string and a dictionary of parameters.
+        clauses: A tuple containing the WHERE clause string
     """
     if not filters:
         return None, {}
 
-    params = {}
     where_clauses = []
 
-    for (model, field_lookup), value in filters.items():
+    for field_lookup, value in filters.items():
         if "__" in field_lookup:
             field_name, lookup_type = field_lookup.split("__", 1)
         else:
@@ -59,14 +62,7 @@ def _filters_to_where_clause(
         except AttributeError:
             raise ValueError(f"Attribute '{field_name}' not found in {model.__name__}")
 
-        param_name = f"filter_{model.__tablename__}_{field_name}_{lookup_type}"
-        params[param_name] = value
-
         if lookup_type == "exact":
-            clause = (
-                column
-                == select([func.jsonb_build_object(param_name, value)]).as_scalar()
-            )
             clause = column == value
 
         elif lookup_type == "iexact":
@@ -104,7 +100,7 @@ def _filters_to_where_clause(
                 raise ValueError(
                     f"Value for `in` should be an iterable and not {type(value)}"
                 )
-            clause = get_in_clause(session, column, value)
+            clause = await get_in_clause(session, column, value)
 
         elif lookup_type == "isnull":
             clause = column.is_(None) if value else column.isnot(None)
@@ -115,4 +111,4 @@ def _filters_to_where_clause(
         where_clauses.append(clause)
 
     combined_clause = and_(*where_clauses) if where_clauses else None
-    return combined_clause, params
+    return combined_clause

@@ -15,6 +15,8 @@ check_optional_deps(ORM.SQLMODEL)
 from sqlmodel import SQLModel, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from fastapi_object_pagination.sqlmodel.clauses import _filters_to_where_clause
+
 
 async def paginate(
     model: SQLModel,
@@ -39,8 +41,13 @@ async def paginate(
     """
     statement = select(model)
     if filters:
-        for key, value in filters.items():
-            statement = statement.where(getattr(model, key) == value)
+        statement = statement.where(
+            await _filters_to_where_clause(
+                session=async_session,
+                model=model,
+                filters=filters,
+            )
+        )
     if ordering:
         for order in ordering:
             key = order.lstrip("-")
@@ -72,6 +79,6 @@ async def paginate(
         page_count=page_count,
         current_page=current_page,
         items_by_page=items_by_page,
-        previous_page_url=_get_previous_page_url(opts),
-        next_page_url=_get_next_page_url(opts, page_count),
+        previous_page_url=await _get_previous_page_url(opts),
+        next_page_url=await _get_next_page_url(opts, page_count),
     )

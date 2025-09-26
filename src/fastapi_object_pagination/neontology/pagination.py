@@ -57,8 +57,8 @@ async def paginate(
         page_count=page_count,
         current_page=current_page,
         items_by_page=items_by_page,
-        previous_page_url=_get_previous_page_url(opts),
-        next_page_url=_get_next_page_url(opts, page_count),
+        previous_page_url=await _get_previous_page_url(opts),
+        next_page_url=await _get_next_page_url(opts, page_count),
     )
 
 
@@ -71,14 +71,14 @@ async def paginate_related(
     ordering: list[str] | None = None,
 ) -> Page[M]:
     alias = model.__primarylabel__.lower()
-    cypher, params = _prefixes(model, relationships, filters)
+    cypher, params = await _prefixes(model, relationships, filters)
     count_cypher = cypher + f" RETURN COUNT(DISTINCT {alias})"
 
     gc = GraphConnection()
 
     offset = (current_page - 1) * items_by_page
     cypher += f" RETURN DISTINCT {alias}"
-    _postfixes_cypher, _postfixes_params = _postfixes(
+    _postfixes_cypher, _postfixes_params = await _postfixes(
         model, params, ordering, offset, items_by_page
     )
     cypher += _postfixes_cypher
@@ -101,6 +101,6 @@ async def paginate_related(
         page_count=page_count,
         current_page=current_page,
         items_by_page=items_by_page,
-        previous_page_url=_get_previous_page_url(opts),
-        next_page_url=_get_next_page_url(opts, page_count),
+        previous_page_url=await _get_previous_page_url(opts),
+        next_page_url=await _get_next_page_url(opts, page_count),
     )
