@@ -1,26 +1,81 @@
 [project]
 name = "fastapi-object-pagination"
 version = "0.1.0"
-description = "Simple FastAPI pagination for SQLModel and Neontology"
+description = "Typed async page objects for FastAPI, with one page shape for SQLModel and Neontology"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-{ name = "Alexandre BERREBI", email = "alexandre.berrebi@businessagile.eu" },
+    { name = "Alexandre BERREBI", email = "alexandre.berrebi@businessagile.eu" },
 ]
 requires-python = ">=3.10"
+keywords = ["fastapi", "pagination", "sqlmodel", "neontology", "neo4j", "async"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Framework :: FastAPI",
+    "Framework :: Pydantic :: 2",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+dependencies = ["pydantic>=2"]
+
+[project.urls]
+Homepage = "https://github.com/BiBzz/fastapi-object-pagination"
+Repository = "https://github.com/BiBzz/fastapi-object-pagination"
+Issues = "https://github.com/BiBzz/fastapi-object-pagination/issues"
 
 [project.optional-dependencies]
 neontology = ["neontology>=2.2.2"]
 sqlmodel = ["sqlmodel>=0.0.25"]
 
-
 [dependency-groups]
-dev = ["pytest>=8.4.2"]
+dev = [
+    "aiosqlite>=0.20",
+    "mypy>=1.11",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+]
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
 markers = [
-"neontology: tests aiming only 'neontology' ORM",
-"sqlmodel: tests aiming only 'sqlmodel' ORM",
+    "neontology: tests aiming only 'neontology' ORM",
+    "sqlmodel: tests aiming only 'sqlmodel' ORM",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/fastapi_object_pagination/*/pagination.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src", "tests"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["neontology.*"]
+ignore_missing_imports = true
 
 [build-system]
 requires = ["uv_build>=0.8.7,<0.9.0"]
