@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-object-pagination"
-version = "0.1.0"
+version = "0.1.1"
 description = "Typed async page objects for FastAPI, with one page shape for SQLModel and Neontology"
 readme = "README.md"
 license = "MIT"

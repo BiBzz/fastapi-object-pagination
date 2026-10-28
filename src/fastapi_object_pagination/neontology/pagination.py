@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from math import ceil
-from typing import Any
+from typing import Any, TypeVar, cast, overload
 
 from fastapi_object_pagination.check_optional_dependencies import (
     ORM,
@@ -21,13 +22,37 @@ from fastapi_object_pagination.neontology.clauses import (  # noqa: E402
     _prefixes,
 )
 
+N = TypeVar("N", bound=BaseNode)
+
+
+@overload
+async def paginate(
+    model: type[N],
+    current_page: int = ...,
+    items_by_page: int = ...,
+    filters: Filters | None = ...,
+    serializer: None = ...,
+) -> Page[N]: ...
+
+
+@overload
+async def paginate(
+    model: type[N],
+    current_page: int = ...,
+    items_by_page: int = ...,
+    filters: Filters | None = ...,
+    *,
+    serializer: Callable[[N], M],
+) -> Page[M]: ...
+
 
 async def paginate(
-    model: type[M],
+    model: type[N],
     current_page: int = 1,
     items_by_page: int = 10,
     filters: Filters | None = None,
-) -> Page[M]:
+    serializer: Callable[[N], M] | None = None,
+) -> Page[N] | Page[M]:
     """
     Paginate a list of items from a Cypher model.
     Returns a Page object containing the paginated items, total count, current page,
@@ -37,6 +62,7 @@ async def paginate(
     :param current_page: The current page number.
     :param items_by_page: The number of items per page.
     :param filters: A dictionary of filters to apply to the query.
+    :param serializer: Maps each node to the model the page should carry.
     :return: A Page object containing the paginated items and pagination metadata.
     """
     node_model: type[BaseNode] = model
@@ -46,32 +72,66 @@ async def paginate(
 
     offset = (current_page - 1) * items_by_page
 
-    items = node_model.match_nodes(skip=offset, limit=items_by_page, filters=filters)
+    items: list[Any] = node_model.match_nodes(
+        skip=offset, limit=items_by_page, filters=filters
+    )
+
+    if serializer is not None:
+        items = [serializer(item) for item in items]
 
     opts: dict[str, Any] = {
         "current_page": current_page,
         "items_by_page": items_by_page,
     }
 
-    return Page[M](
-        items=items,
-        item_count=item_count,
-        page_count=page_count,
-        current_page=current_page,
-        items_by_page=items_by_page,
-        previous_page_url=await _get_previous_page_url(opts),
-        next_page_url=await _get_next_page_url(opts, page_count),
+    return cast(
+        "Page[N] | Page[M]",
+        Page[M](
+            items=items,
+            item_count=item_count,
+            page_count=page_count,
+            current_page=current_page,
+            items_by_page=items_by_page,
+            previous_page_url=await _get_previous_page_url(opts),
+            next_page_url=await _get_next_page_url(opts, page_count),
+        ),
     )
 
 
+@overload
 async def paginate_related(
-    model: type[M],
+    model: type[N],
+    relationships: list[type[BaseRelationship]],
+    current_page: int = ...,
+    items_by_page: int = ...,
+    filters: Filters | None = ...,
+    ordering: list[str] | None = ...,
+    serializer: None = ...,
+) -> Page[N]: ...
+
+
+@overload
+async def paginate_related(
+    model: type[N],
+    relationships: list[type[BaseRelationship]],
+    current_page: int = ...,
+    items_by_page: int = ...,
+    filters: Filters | None = ...,
+    ordering: list[str] | None = ...,
+    *,
+    serializer: Callable[[N], M],
+) -> Page[M]: ...
+
+
+async def paginate_related(
+    model: type[N],
     relationships: list[type[BaseRelationship]],
     current_page: int = 1,
     items_by_page: int = 10,
     filters: Filters | None = None,
     ordering: list[str] | None = None,
-) -> Page[M]:
+    serializer: Callable[[N], M] | None = None,
+) -> Page[N] | Page[M]:
     """
     Paginate the nodes of `model` that are connected through `relationships`.
 
@@ -81,6 +141,7 @@ async def paginate_related(
     :param items_by_page: The number of items per page.
     :param filters: A dictionary of filters to apply to the query.
     :param ordering: A list of fields to order the query by.
+    :param serializer: Maps each node to the model the page should carry.
     :return: A Page object containing the paginated items and pagination metadata.
     """
     node_model: type[BaseNode] = model
@@ -98,23 +159,29 @@ async def paginate_related(
     cypher += postfixes_cypher
     params.update(postfixes_params)
 
-    items = gc.evaluate_query(
+    items: list[Any] = gc.evaluate_query(
         cypher, params, node_classes={node_model.__primarylabel__: node_model}
     ).nodes
     item_count = gc.evaluate_query_single(count_cypher, params)
     page_count = ceil(item_count / items_by_page) if items_by_page > 0 else 0
+
+    if serializer is not None:
+        items = [serializer(item) for item in items]
 
     opts: dict[str, Any] = {
         "current_page": current_page,
         "items_by_page": items_by_page,
     }
 
-    return Page[M](
-        items=items,
-        item_count=item_count,
-        page_count=page_count,
-        current_page=current_page,
-        items_by_page=items_by_page,
-        previous_page_url=await _get_previous_page_url(opts),
-        next_page_url=await _get_next_page_url(opts, page_count),
+    return cast(
+        "Page[N] | Page[M]",
+        Page[M](
+            items=items,
+            item_count=item_count,
+            page_count=page_count,
+            current_page=current_page,
+            items_by_page=items_by_page,
+            previous_page_url=await _get_previous_page_url(opts),
+            next_page_url=await _get_next_page_url(opts, page_count),
+        ),
     )

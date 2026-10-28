@@ -122,6 +122,28 @@ async def list_people(page: int = 1, size: int = 10) -> Page[Person]:
 `paginate_related` does the same across a relationship, so a page of nodes can
 be restricted to those connected to another label.
 
+Both take an optional `serializer`, for when the page should carry an API model
+rather than the node that was queried. The page is then typed on what the
+serializer returns.
+
+```python
+from pydantic import BaseModel
+
+
+class PersonOut(BaseModel):
+    label: str
+
+
+@app.get("/people/labels")
+async def list_labels(page: int = 1, size: int = 10) -> Page[PersonOut]:
+    return await paginate(
+        model=Person,
+        current_page=page,
+        items_by_page=size,
+        serializer=lambda person: PersonOut(label=f"{person.name} ({person.city})"),
+    )
+```
+
 ### The page
 
 ```json
