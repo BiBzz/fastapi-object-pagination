@@ -10,16 +10,16 @@ class ORM(str, Enum):
 def check_optional_deps(orm: ORM) -> None:
     try:
         if orm == ORM.NEONTOLOGY:
-            version(ORM.NEONTOLOGY)
+            version(ORM.NEONTOLOGY.value)
         elif orm == ORM.SQLMODEL:
-            version(ORM.SQLMODEL)
+            version(ORM.SQLMODEL.value)
         else:
             raise ValueError(
-                f"Unsupported ORM: {orm}"
-                f"FastAPI Object Pagination only supports 'neontology' and 'sqlmodel'"
+                f"Unsupported ORM: {orm!r}. FastAPI Object Pagination only supports "
+                f"'neontology' and 'sqlmodel'."
             )
-    except PackageNotFoundError as e:
+    except PackageNotFoundError as error:
         raise ImportError(
-            f"ORM '{orm}' need extra dependencies."
-            f"Please run : uv add 'fastapi-object-pagination[{orm}]'"
-        ) from e
+            f"ORM '{orm.value}' needs extra dependencies. "
+            f"Please run: uv add 'fastapi-object-pagination[{orm.value}]'"
+        ) from error

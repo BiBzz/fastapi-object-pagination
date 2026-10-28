@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -15,12 +15,12 @@ class Page(BaseModel, Generic[M]):
     next_page_url: str | None
 
 
-async def _get_page_url(opts: dict = {}) -> str:
+async def _get_page_url(opts: dict[str, Any]) -> str:
     opts_str = "&".join(f"{k}={v}" for k, v in opts.items())
     return f"?{opts_str}"
 
 
-async def _get_previous_page_url(opts: dict = {}) -> str | None:
+async def _get_previous_page_url(opts: dict[str, Any]) -> str | None:
     if opts["current_page"] <= 1:
         return None
     local_opts = opts.copy()
@@ -29,7 +29,7 @@ async def _get_previous_page_url(opts: dict = {}) -> str | None:
 
 
 async def _get_next_page_url(
-    opts: dict = {}, page_count: int | None = None
+    opts: dict[str, Any], page_count: int | None = None
 ) -> str | None:
     if page_count is None or opts["current_page"] >= page_count:
         return None

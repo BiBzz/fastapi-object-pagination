@@ -3,10 +3,13 @@ from typing import Any
 from neontology import BaseNode, BaseRelationship
 
 Clause = str
-Params = dict
+Params = dict[str, Any]
+Filters = dict[tuple[type[BaseNode], str], Any]
 
 
-async def _cypher_relation_to_match_clause(relation_class: BaseRelationship) -> Clause:
+async def _cypher_relation_to_match_clause(
+    relation_class: type[BaseRelationship],
+) -> Clause:
     """
     Convert a relationship to a MATCH clause for a query.
     Args:
@@ -16,30 +19,34 @@ async def _cypher_relation_to_match_clause(relation_class: BaseRelationship) -> 
     """
     if not issubclass(relation_class, BaseRelationship):
         raise ValueError("relation_class must be a subclass of BaseRelationship")
-    params = {}
     source = relation_class.model_fields["source"].annotation.__primarylabel__
     target = relation_class.model_fields["target"].annotation.__primarylabel__
-    return f" MATCH ({source.lower()}:{source})-[:{relation_class.__relationshiptype__}]-({target.lower()}:{target})"
+    return (
+        f" MATCH ({source.lower()}:{source})"
+        f"-[:{relation_class.__relationshiptype__}]-"
+        f"({target.lower()}:{target})"
+    )
 
 
 async def _filters_to_where_clause(
-    filters: dict[tuple, str] | None = None,
+    filters: Filters | None = None,
 ) -> tuple[Clause, Params]:
-    """Convert a dictionary of filters into a WHERE clause and parameter dictionary for a query.
+    """Convert filters into a WHERE clause and its parameter dictionary.
 
     Args:
-        filters (dict | None): A dictionary of filters. Each key is a field name possibly followed
-                            by '__' and a lookup type (e.g., 'exact', 'contains'). The value is
-                            the filter value. If None, returns an empty WHERE clause.
+        filters (dict | None): A dictionary of filters. Each key is a field name,
+            optionally followed by '__' and a lookup type (for example 'exact' or
+            'contains'). The value is the filter value. If None, no WHERE clause
+            is produced.
 
     Returns:
-        tuple: A tuple containing the WHERE clause string and a dictionary of parameters.
+        tuple: The WHERE clause string and its dictionary of parameters.
     """
-    params = {}
+    params: Params = {}
     where_clauses = []
     if filters:
         for key, value in filters.items():
-            if not isinstance(key, tuple) and not issubclass(key[0], BaseNode):
+            if not isinstance(key, tuple) or not issubclass(key[0], BaseNode):
                 raise ValueError("Filter keys must be tuples of (model, field)")
             alias = key[0].__primarylabel__.lower()
             if "__" in key[1]:
@@ -88,7 +95,9 @@ async def _filters_to_where_clause(
     return where_clause, params
 
 
-async def _ordering_to_order_by_clause(model: BaseNode, ordering: list[str]) -> Clause:
+async def _ordering_to_order_by_clause(
+    model: type[BaseNode], ordering: list[str]
+) -> Clause:
     """
     Convert ordering to ORDER BY clause.
     This function is used to convert ordering to ORDER BY clause.
@@ -103,18 +112,15 @@ async def _ordering_to_order_by_clause(model: BaseNode, ordering: list[str]) -> 
             order_by_clauses.append(f"{alias}.{field[1:]} DESC")
         else:
             order_by_clauses.append(f"{alias}.{field} ASC")
-    order_by_clause = (
-        " ORDER BY " + ", ".join(order_by_clauses) if order_by_clauses else ""
-    )
-    return order_by_clause
+    return " ORDER BY " + ", ".join(order_by_clauses) if order_by_clauses else ""
 
 
 async def _prefixes(
-    model: BaseNode,
-    relationships: list[str] | None = None,
-    filters: dict[str, Any] | None = None,
+    model: type[BaseNode],
+    relationships: list[type[BaseRelationship]] | None = None,
+    filters: Filters | None = None,
 ) -> tuple[Clause, Params]:
-    params = {}
+    params: Params = {}
     alias = model.__primarylabel__.lower()
     cypher = f"MATCH ({alias}:{model.__primarylabel__})"
     if relationships:
@@ -128,7 +134,7 @@ async def _prefixes(
 
 
 async def _postfixes(
-    model: BaseNode,
+    model: type[BaseNode],
     params: Params,
     ordering: list[str] | None = None,
     offset: int | None = None,

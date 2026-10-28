@@ -1,4 +1,5 @@
 from math import ceil
+from typing import Any, cast
 
 from fastapi_object_pagination.check_optional_dependencies import (
     ORM,
@@ -12,18 +13,20 @@ from fastapi_object_pagination.common import (
 )
 
 check_optional_deps(ORM.SQLMODEL)
-from sqlmodel import SQLModel, func, select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import func, select  # noqa: E402
+from sqlmodel.ext.asyncio.session import AsyncSession  # noqa: E402
 
-from fastapi_object_pagination.sqlmodel.clauses import _filters_to_where_clause
+from fastapi_object_pagination.sqlmodel.clauses import (  # noqa: E402
+    _filters_to_where_clause,
+)
 
 
 async def paginate(
-    model: SQLModel,
+    model: type[M],
     async_session: AsyncSession,
     current_page: int = 1,
     items_by_page: int = 10,
-    filters: dict | None = None,
+    filters: dict[str, Any] | None = None,
     ordering: list[str] | None = None,
 ) -> Page[M]:
     """
@@ -40,18 +43,17 @@ async def paginate(
     :return: A Page object containing the paginated items and pagination metadata.
     """
     statement = select(model)
-    if filters:
-        statement = statement.where(
-            await _filters_to_where_clause(
-                session=async_session,
-                model=model,
-                filters=filters,
-            )
-        )
+    where_clause = await _filters_to_where_clause(
+        session=async_session,
+        model=model,
+        filters=filters,
+    )
+    if where_clause is not None:
+        statement = statement.where(where_clause)
     if ordering:
         for order in ordering:
             key = order.lstrip("-")
-            if order[0] == "-":
+            if order.startswith("-"):
                 ordering_key = getattr(model, key).desc()
             else:
                 ordering_key = getattr(model, key).asc()
@@ -59,21 +61,18 @@ async def paginate(
     paginated_statement = statement.offset((current_page - 1) * items_by_page).limit(
         items_by_page
     )
-    async with async_session as async_session:
-        items = await async_session.exec(paginated_statement)
-        item_count = (
-            await async_session.exec(
-                select(func.count()).select_from(statement.subquery())
-            )
-        ).one()
+    items = cast("list[M]", list((await async_session.exec(paginated_statement)).all()))
+    item_count = (
+        await async_session.exec(select(func.count()).select_from(statement.subquery()))
+    ).one()
     page_count = ceil(item_count / items_by_page) if items_by_page > 0 else 0
 
-    opts = {
+    opts: dict[str, Any] = {
         "current_page": current_page,
         "items_by_page": items_by_page,
     }
 
-    return Page(
+    return Page[M](
         items=items,
         item_count=item_count,
         page_count=page_count,

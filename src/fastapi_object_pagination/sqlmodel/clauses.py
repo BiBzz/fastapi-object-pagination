@@ -1,53 +1,49 @@
-import asyncio
 from typing import Any
 
-from sqlalchemy import text
-from sqlalchemy.sql.expression import BinaryExpression
-from sqlmodel import SQLModel, and_, func
+from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.expression import any_, false
+from sqlmodel import and_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-Clause = BinaryExpression
+Clause = ColumnElement[bool]
 
 
-async def is_postgresql(session: AsyncSession) -> bool:
+def is_postgresql(session: AsyncSession) -> bool:
     """Check if the current session uses PostgreSQL."""
     try:
-        version_str = await session.exec(text("SELECT version()"))
-        return "PostgreSQL" in str(version_str)
+        return session.get_bind().dialect.name == "postgresql"
     except Exception:
         return False
 
 
-async def get_in_clause(session, column, values):
+def get_in_clause(session: AsyncSession, column: Any, values: Any) -> Any:
     """Return the appropriate IN/ANY clause based on the dialect."""
-    from sqlalchemy.sql.expression import any_
-
     if not values:
-        return column == False
+        return false()
 
-    if await is_postgresql(session):
+    if is_postgresql(session):
         return column == any_(values)  # ANY(ARRAY[...]) optimized for PostgreSQL
-    else:
-        return column.in_(values)  # IN (...) for SQLite/MySQL
+    return column.in_(values)
 
 
 async def _filters_to_where_clause(
     session: AsyncSession,
-    model: SQLModel,
-    filters: dict[tuple[type[SQLModel], str], Any] | None = None,
+    model: type[Any],
+    filters: dict[str, Any] | None = None,
 ) -> Clause | None:
-    """Convert a dictionary of filters into a WHERE clause for a query for SQLModel.
+    """Convert a dictionary of filters into a WHERE clause for a SQLModel query.
 
     Args:
-        filters (dict | None): A dictionary of filters. Each key is a field name possibly followed
-                            by '__' and a lookup type (e.g., 'exact', 'contains'). The value is
-                            the filter value. If None, returns an empty WHERE clause.
+        filters (dict | None): A dictionary of filters. Each key is a field name,
+            optionally followed by '__' and a lookup type (for example 'exact' or
+            'contains'). The value is the filter value. If None, no WHERE clause
+            is produced.
 
     Returns:
         clauses: A tuple containing the WHERE clause string
     """
     if not filters:
-        return None, {}
+        return None
 
     where_clauses = []
 
@@ -59,8 +55,10 @@ async def _filters_to_where_clause(
 
         try:
             column = getattr(model, field_name)
-        except AttributeError:
-            raise ValueError(f"Attribute '{field_name}' not found in {model.__name__}")
+        except AttributeError as error:
+            raise ValueError(
+                f"Attribute '{field_name}' not found in {model.__name__}"
+            ) from error
 
         if lookup_type == "exact":
             clause = column == value
@@ -100,15 +98,14 @@ async def _filters_to_where_clause(
                 raise ValueError(
                     f"Value for `in` should be an iterable and not {type(value)}"
                 )
-            clause = await get_in_clause(session, column, value)
+            clause = get_in_clause(session, column, value)
 
         elif lookup_type == "isnull":
             clause = column.is_(None) if value else column.isnot(None)
 
         else:
-            raise ValueError(f"Unkown lookup: {lookup_type}")
+            raise ValueError(f"Unknown lookup: {lookup_type}")
 
         where_clauses.append(clause)
 
-    combined_clause = and_(*where_clauses) if where_clauses else None
-    return combined_clause
+    return and_(*where_clauses) if where_clauses else None
