@@ -187,6 +187,11 @@ On PostgreSQL the `in` lookup is compiled to `= ANY(ARRAY[...])` instead of
 FastAPI itself is not a dependency: the library only returns Pydantic models,
 so any FastAPI version that works with Pydantic 2 will serialize them.
 
+## Contributing
+
+How to set the project up, the checks CI runs and how a release is cut:
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
