@@ -34,6 +34,17 @@ repository is written in English, comments and test names included, and commit
 messages follow [Conventional Commits](https://www.conventionalcommits.org):
 `feat: ...`, `fix: ...`, `docs: ...`.
 
+## The changelog
+
+Anything a user of the library would notice goes under `## [Unreleased]` in
+[CHANGELOG.md](CHANGELOG.md), in the pull request that changes the behaviour,
+not at release time. The format is
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/): an `### Added`,
+`### Changed`, `### Fixed`, `### Removed` or `### Deprecated` subsection, one
+bullet per change, written for someone upgrading rather than for someone
+reading the diff. Work that changes nothing for a user, such as these
+instructions or a CI tweak, needs no entry.
+
 ## Releasing
 
 One command, run from `development` by a maintainer:
@@ -42,16 +53,19 @@ One command, run from `development` by a maintainer:
 scripts/release.sh 0.1.2
 ```
 
-It bumps the version in `pyproject.toml`, refreshes `uv.lock`, replays the four
-checks above, commits as `chore(release): 0.1.2`, creates a signed `v0.1.2` tag
-and, after asking, pushes the branch and the tag to both remotes, `github` and
-`origin`. A second argument becomes the tag message, and `--yes` skips the
-question.
+It bumps the version in `pyproject.toml`, refreshes `uv.lock`, turns
+`## [Unreleased]` into `## [0.1.2] - <today>` with its compare links, replays
+the four checks above, commits as `chore(release): 0.1.2`, creates a signed
+`v0.1.2` tag whose message is the changelog entry, and, after asking, pushes
+the branch and the tag to both remotes, `github` and `origin`. A second
+argument replaces the tag message, and `--yes` skips the question.
 
 It refuses to run from another branch, on a tree that differs from either
-remote, on a version already declared or older than the declared one, and on a
-tag that exists anywhere already. When a check fails, `pyproject.toml` and
-`uv.lock` are put back as they were and nothing is committed or pushed.
+remote, on a version already declared or older than the declared one, on a tag
+that exists anywhere already, and on an empty `## [Unreleased]` section: a
+release says what it changes. When a check fails, `pyproject.toml`, `uv.lock`
+and `CHANGELOG.md` are put back as they were and nothing is committed or
+pushed.
 
 ### What the tag triggers
 

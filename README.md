@@ -190,7 +190,8 @@ so any FastAPI version that works with Pydantic 2 will serialize them.
 ## Contributing
 
 How to set the project up, the checks CI runs and how a release is cut:
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md). What changed between versions:
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
 

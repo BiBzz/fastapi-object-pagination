@@ -30,7 +30,7 @@ done
 
 version="${args[0]}"
 tag="v${version}"
-message="${args[1]:-Release ${version}}"
+message="${args[1]:-}"
 
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(((a|b|rc)[0-9]+)|(\.post[0-9]+))?$ ]] ||
     die "version ${version} is not of the form 1.2.3, 1.2.3rc1, 1.2.3a1, 1.2.3b1 or 1.2.3.post1"
@@ -55,6 +55,14 @@ if [[ "$version" =~ ^[0-9.]+$ && "$current" =~ ^[0-9.]+$ ]]; then
 fi
 ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null ||
     die "tag ${tag} already exists locally"
+python3 scripts/roll_changelog.py "$version" --check
+
+# the tag message is the release notes GitHub shows, so it defaults to the entry
+if [ -z "$message" ]; then
+    message="Release ${version}
+
+$(python3 scripts/roll_changelog.py "$version" --body)"
+fi
 
 for remote in "${REMOTES[@]}"; do
     step "Checking ${remote}"
@@ -66,13 +74,16 @@ for remote in "${REMOTES[@]}"; do
 done
 
 committed=false
-cleanup() { $committed || git checkout --quiet -- pyproject.toml uv.lock; }
+cleanup() { $committed || git checkout --quiet -- pyproject.toml uv.lock CHANGELOG.md; }
 trap cleanup EXIT INT
 
 step "Bumping ${current} to ${version}"
 sed -i "s/^version = \"${current}\"$/version = \"${version}\"/" pyproject.toml
 grep -q "^version = \"${version}\"$" pyproject.toml || die "the version bump did not apply"
 uv lock --quiet
+
+step "Rolling the changelog"
+python3 scripts/roll_changelog.py "$version"
 
 step "Replaying the checks CI runs"
 uv sync --quiet
@@ -82,9 +93,11 @@ uv run mypy
 uv run pytest -q
 
 step "Committing and tagging"
-git commit --gpg-sign --quiet -m "chore(release): ${version}" -- pyproject.toml uv.lock
+git commit --gpg-sign --quiet -m "chore(release): ${version}" \
+    -- pyproject.toml uv.lock CHANGELOG.md
 committed=true
-git tag --sign -m "$message" "$tag"
+# git tag defaults to --cleanup=strip, which would eat the ### headings
+git tag --sign --cleanup=whitespace -m "$message" "$tag"
 git --no-pager show --no-patch --format='%h %s [signature %G?]' HEAD
 
 if ! $assume_yes; then
