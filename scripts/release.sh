@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 #
 # Cut a release: bump the version, replay the checks CI runs, then sign and
-# push the tag that triggers the PyPI upload.
+# push the tag to GitLab; its mirror carries it to GitHub, where the tag
+# triggers the PyPI upload.
 #
 #   scripts/release.sh <version> [tag message] [--yes]
 #
 # It refuses to release from another branch, to release a tree that differs
-# from either remote, to reuse or go backwards on a version, and to push
+# from GitLab, to reuse or go backwards on a version, and to push
 # anything once a check has failed.
 
 set -euo pipefail
 
 RELEASE_BRANCH="${RELEASE_BRANCH:-development}"
-REMOTES=(github origin)
+REMOTES=(origin)
 
 die() { printf 'release: %s\n' "$1" >&2; exit 1; }
 step() { printf '\n==> %s\n' "$1"; }
@@ -114,7 +115,5 @@ for remote in "${REMOTES[@]}"; do
     git push "$remote" "$RELEASE_BRANCH" "$tag"
 done
 
-repo="$(git remote get-url github)"
-repo="${repo%.git}"
-printf '\n%s is pushed. The Release workflow is now waiting for a reviewer on the\npypi environment, and publishes once approved:\n  %s/actions\n' \
-    "$tag" "$repo"
+printf '\n%s is pushed to GitLab. Once the mirror carries it to GitHub, the Release\nworkflow waits for a reviewer on the pypi environment, and publishes once approved:\n  %s\n' \
+    "$tag" "https://github.com/BiBzz/fastapi-object-pagination/actions/workflows/release.yml"

@@ -1,5 +1,20 @@
 # Contributing
 
+## Issues and pull requests
+
+Report bugs, ask questions and propose changes on
+[GitHub](https://github.com/BiBzz/fastapi-object-pagination):
+[issues](https://github.com/BiBzz/fastapi-object-pagination/issues) and pull requests against
+`development` are welcome there, and your commits do not need to be signed.
+
+The code is reviewed and merged on [GitLab](https://gitlab.com/businessagile/libraries/fastapi-object-pagination), which mirrors itself to
+GitHub. A pull request is picked up into a GitLab merge request that links
+back to it, keeps you as the author of your commits, and runs the full CI.
+Once merged, the mirror brings the commits to GitHub, which marks the pull
+request as merged; if they had to be rebased, the pull request is closed with
+a link to the commit. Do not expect the GitHub merge button to work: only the
+mirror writes to `development`.
+
 ## Setting up
 
 The project is managed with [uv](https://docs.astral.sh/uv/). One command gives
@@ -14,7 +29,7 @@ library supports.
 
 ## The checks
 
-These are the gates CI runs, in this order:
+These are the gates CI runs on GitLab and GitHub Actions, in this order:
 
 ```bash
 uv run ruff check .
@@ -32,7 +47,7 @@ from your machine.
 Work branches off `development`, the default branch. Everything in the
 repository is written in English, comments and test names included, and commit
 messages follow [Conventional Commits](https://www.conventionalcommits.org):
-`feat: ...`, `fix: ...`, `docs: ...`.
+`feat: ...`, `fix: ...`, `docs: ...`. Maintainers sign their commits and tags.
 
 ## The changelog
 
@@ -57,11 +72,10 @@ It bumps the version in `pyproject.toml`, refreshes `uv.lock`, turns
 `## [Unreleased]` into `## [0.1.2] - <today>` with its compare links, replays
 the four checks above, commits as `chore(release): 0.1.2`, creates a signed
 `v0.1.2` tag whose message is the changelog entry, and, after asking, pushes
-the branch and the tag to both remotes, `github` and `origin`. A second
+the branch and the tag to GitLab (`origin`); the mirror carries them to GitHub. A second
 argument replaces the tag message, and `--yes` skips the question.
 
-It refuses to run from another branch, on a tree that differs from either
-remote, on a version already declared or older than the declared one, on a tag
+It refuses to run from another branch, on a tree that differs from GitLab, on a version already declared or older than the declared one, on a tag
 that exists anywhere already, and on an empty `## [Unreleased]` section: a
 release says what it changes. When a check fails, `pyproject.toml`, `uv.lock`
 and `CHANGELOG.md` are put back as they were and nothing is committed or
@@ -69,7 +83,7 @@ pushed.
 
 ### What the tag triggers
 
-Pushing a `v*` tag to GitHub starts the `Release` workflow, which verifies the
+A `v*` tag reaching GitHub through the mirror starts the `Release` workflow, which verifies the
 tag matches the declared version, runs the checks again on a clean machine,
 builds the wheel and the sdist, then uploads them to PyPI. The upload is
 authenticated by PyPI trusted publishing over OIDC, so no API token is stored
@@ -83,18 +97,18 @@ its files can never be replaced or uploaded again.
 
 ### Cutting a release needs
 
-- push access to `github` and `origin`;
+- push access to `development` and `v*` tags on GitLab;
 - a GPG key able to sign, since both the commit and the tag are signed;
 - the rights to approve the `pypi` environment on GitHub.
 
 ### If a release goes wrong
 
-Before the upload, a failed run leaves a tag behind. Delete it on both sides,
-fix the problem, then run the script again with the same version:
+Before the upload, a failed run leaves a tag behind. Delete it on GitLab, which
+the mirror replicates, fix the problem, then run the script again with the same
+version:
 
 ```bash
 git tag -d v0.1.2
-git push github :refs/tags/v0.1.2
 git push origin :refs/tags/v0.1.2
 git reset --hard HEAD~1   # only while the release commit is still unpushed
 ```
