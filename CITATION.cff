@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: If you use fastapi-object-pagination in your work, please cite it as below.
+type: software
+title: fastapi-object-pagination
+abstract: Typed async page objects for FastAPI, with one page shape for SQLModel and Neontology.
+authors:
+  - given-names: Alexandre
+    family-names: BERREBI
+    email: alexandre.berrebi@businessagile.eu
+    affiliation: Business Agile
+    website: https://businessagile.eu/en/about
+version: 0.1.1
+date-released: 2026-10-28
+license: MIT
+url: https://pypi.org/project/fastapi-object-pagination/
+repository-code: https://gitlab.com/businessagile/libraries/fastapi-object-pagination
+keywords:
+  - fastapi
+  - pagination
+  - sqlmodel
+  - neontology
+  - neo4j
+  - async

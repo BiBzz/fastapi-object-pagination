@@ -193,6 +193,11 @@ How to set the project up, the checks CI runs and how a release is cut:
 [CONTRIBUTING.md](CONTRIBUTING.md). What changed between versions:
 [CHANGELOG.md](CHANGELOG.md).
 
+## Author
+
+Created by [Alexandre BERREBI](https://businessagile.eu/en/about), maintained by
+[Business Agile](https://businessagile.eu).
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

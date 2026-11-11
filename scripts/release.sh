@@ -75,12 +75,13 @@ for remote in "${REMOTES[@]}"; do
 done
 
 committed=false
-cleanup() { $committed || git checkout --quiet -- pyproject.toml uv.lock CHANGELOG.md; }
+cleanup() { $committed || git checkout --quiet -- pyproject.toml uv.lock CHANGELOG.md CITATION.cff; }
 trap cleanup EXIT INT
 
 step "Bumping ${current} to ${version}"
 sed -i "s/^version = \"${current}\"$/version = \"${version}\"/" pyproject.toml
 grep -q "^version = \"${version}\"$" pyproject.toml || die "the version bump did not apply"
+sed -i -e "s/^version: .*/version: ${version}/" -e "s/^date-released: .*/date-released: $(date +%F)/" CITATION.cff
 uv lock --quiet
 
 step "Rolling the changelog"
@@ -95,7 +96,7 @@ uv run pytest -q
 
 step "Committing and tagging"
 git commit --gpg-sign --quiet -m "chore(release): ${version}" \
-    -- pyproject.toml uv.lock CHANGELOG.md
+    -- pyproject.toml uv.lock CHANGELOG.md CITATION.cff
 committed=true
 # git tag defaults to --cleanup=strip, which would eat the ### headings
 git tag --sign --cleanup=whitespace -m "$message" "$tag"

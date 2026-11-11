@@ -68,7 +68,7 @@ One command, run from `development` by a maintainer:
 scripts/release.sh 0.1.2
 ```
 
-It bumps the version in `pyproject.toml`, refreshes `uv.lock`, turns
+It bumps the version in `pyproject.toml` and `CITATION.cff`, refreshes `uv.lock`, turns
 `## [Unreleased]` into `## [0.1.2] - <today>` with its compare links, replays
 the four checks above, commits as `chore(release): 0.1.2`, creates a signed
 `v0.1.2` tag whose message is the changelog entry, and, after asking, pushes
