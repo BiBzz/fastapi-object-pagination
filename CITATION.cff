@@ -13,7 +13,7 @@ version: 0.1.1
 date-released: 2026-10-28
 license: MIT
 url: https://pypi.org/project/fastapi-object-pagination/
-repository-code: https://gitlab.com/businessagile/libraries/fastapi-object-pagination
+repository-code: https://github.com/BiBzz/fastapi-object-pagination
 keywords:
   - fastapi
   - pagination
