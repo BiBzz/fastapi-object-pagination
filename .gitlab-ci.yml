@@ -1,5 +1,6 @@
 stages:
   - verify
+  - docs
 
 default:
   # uv 0.13.4 on Python 3.12; each job of the matrix fetches its own interpreter
@@ -43,3 +44,28 @@ test:
       - UV_PYTHON: ["3.11", "3.12", "3.13"]
   script:
     - uv run pytest -q
+
+.docs: &docs
+  stage: docs
+  needs: []
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .uv-cache
+  script:
+    - uv sync --group docs
+    - uv run zensical build --clean
+
+docs:
+  <<: *docs
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+pages:
+  <<: *docs
+  pages:
+    publish: site
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

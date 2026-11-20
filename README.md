@@ -11,6 +11,8 @@ items, the counts, and the URLs of the previous and next pages. The same
 clients of the API, and its OpenAPI schema, do not change when the storage
 does.
 
+**Documentation**: https://fastapi-object-pagination.businessagile.eu
+
 ## Why it exists
 
 It was extracted from a production application that reads part of its data from
@@ -73,14 +75,14 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 @app.get("/heroes")
 async def list_heroes(
     session: Annotated[AsyncSession, Depends(get_session)],
-    page: int = 1,
-    size: int = 10,
+    current_page: int = 1,
+    items_by_page: int = 10,
 ) -> Page[Hero]:
     return await paginate(
         model=Hero,
         async_session=session,
-        current_page=page,
-        items_by_page=size,
+        current_page=current_page,
+        items_by_page=items_by_page,
         filters={"team__icontains": "preventers"},
         ordering=["-name"],
     )
@@ -88,7 +90,8 @@ async def list_heroes(
 
 `paginate` is generic over the model, so the return type is inferred:
 `paginate(model=Hero, ...)` is a `Page[Hero]`, and mypy checks the endpoint
-signature against it.
+signature against it. The query parameters are named like the ones the
+previous and next page URLs carry, so a client can follow them as they are.
 
 ### Neontology
 
@@ -110,17 +113,57 @@ class Person(BaseNode):
 
 
 @app.get("/people")
-async def list_people(page: int = 1, size: int = 10) -> Page[Person]:
+async def list_people(current_page: int = 1, items_by_page: int = 10) -> Page[Person]:
     return await paginate(
         model=Person,
-        current_page=page,
-        items_by_page=size,
-        filters={(Person, "city__iexact"): "Paris"},
+        current_page=current_page,
+        items_by_page=items_by_page,
     )
 ```
 
 `paginate_related` does the same across a relationship, so a page of nodes can
-be restricted to those connected to another label.
+be restricted to those connected to another label, and filtered on it:
+
+```python
+from neontology import BaseRelationship
+
+from fastapi_object_pagination.neontology import paginate_related
+
+
+class City(BaseNode):
+    __primarylabel__: str = "City"
+    __primaryproperty__: str = "name"
+
+    name: str
+
+
+class LivesIn(BaseRelationship):
+    __relationshiptype__: str = "LIVES_IN"
+
+    source: Person
+    target: City
+
+
+@app.get("/cities/{city}/people")
+async def list_residents(
+    city: str, current_page: int = 1, items_by_page: int = 10
+) -> Page[Person]:
+    return await paginate_related(
+        model=Person,
+        relationships=[LivesIn],
+        current_page=current_page,
+        items_by_page=items_by_page,
+        filters={(City, "name__iexact"): city},
+        ordering=["name"],
+    )
+```
+
+In 0.1.1, the `filters` of `paginate` are handed to Neontology as they are,
+which does not understand the `(node class, field)` keys the signature
+declares. Filter a single label with `paginate_related` and an empty list of
+relationships instead; the
+[Neontology page](https://fastapi-object-pagination.businessagile.eu/neontology/)
+of the documentation shows how.
 
 Both take an optional `serializer`, for when the page should carry an API model
 rather than the node that was queried. The page is then typed on what the
@@ -135,11 +178,13 @@ class PersonOut(BaseModel):
 
 
 @app.get("/people/labels")
-async def list_labels(page: int = 1, size: int = 10) -> Page[PersonOut]:
+async def list_labels(
+    current_page: int = 1, items_by_page: int = 10
+) -> Page[PersonOut]:
     return await paginate(
         model=Person,
-        current_page=page,
-        items_by_page=size,
+        current_page=current_page,
+        items_by_page=items_by_page,
         serializer=lambda person: PersonOut(label=f"{person.name} ({person.city})"),
     )
 ```
@@ -172,8 +217,9 @@ SQLModel keys are field names (`"name__icontains"`). Neontology keys are
 `(node_class, field_lookup)` tuples, because a Cypher query can touch several
 labels at once.
 
-On PostgreSQL the `in` lookup is compiled to `= ANY(ARRAY[...])` instead of
-`IN (...)`, which plans better on large lists; other dialects keep `IN`.
+On PostgreSQL the `in` lookup is compiled to `= ANY(...)`, the list bound as
+one array parameter, instead of `IN (...)`, which plans better on large lists;
+other dialects keep `IN`.
 
 ## Compatibility
 
@@ -189,9 +235,15 @@ so any FastAPI version that works with Pydantic 2 will serialize them.
 
 ## Contributing
 
+The documentation site is built from `docs/` and `mkdocs.yml`; its examples
+live in `docs_src/` and run in `tests/test_tutorial/`.
+
 How to set the project up, the checks CI runs and how a release is cut:
 [CONTRIBUTING.md](CONTRIBUTING.md). What changed between versions:
 [CHANGELOG.md](CHANGELOG.md).
+
+The source is on [GitHub](https://github.com/BiBzz/fastapi-object-pagination), where
+[issues](https://github.com/BiBzz/fastapi-object-pagination/issues) and pull requests are welcome.
 
 ## Author
 

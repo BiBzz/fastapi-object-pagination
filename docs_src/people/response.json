@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"name": "Ada", "city": "London"},
+    {"name": "Alan", "city": "London"}
+  ],
+  "item_count": 3,
+  "page_count": 2,
+  "current_page": 1,
+  "items_by_page": 2,
+  "previous_page_url": null,
+  "next_page_url": "?current_page=2&items_by_page=2"
+}

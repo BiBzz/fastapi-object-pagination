@@ -31,9 +31,11 @@ classifiers = [
 dependencies = ["pydantic>=2"]
 
 [project.urls]
-Homepage = "https://github.com/BiBzz/fastapi-object-pagination"
+Homepage = "https://fastapi-object-pagination.businessagile.eu"
+Documentation = "https://fastapi-object-pagination.businessagile.eu"
 Repository = "https://github.com/BiBzz/fastapi-object-pagination"
 Issues = "https://github.com/BiBzz/fastapi-object-pagination/issues"
+Changelog = "https://github.com/BiBzz/fastapi-object-pagination/blob/development/CHANGELOG.md"
 
 [project.optional-dependencies]
 neontology = ["neontology>=2.2.2"]
@@ -44,6 +46,8 @@ sqlmodel = ["sqlmodel>=0.0.25", "sqlalchemy[asyncio]>=2"]
 # both backends sit here too, so `uv run` checks and tests every code path
 dev = [
     "aiosqlite>=0.20",
+    "fastapi==0.162.0",
+    "httpx2==2.16.0",
     "mypy>=1.11",
     "neontology>=2.2.2",
     "pytest>=8.4.2",
@@ -52,6 +56,10 @@ dev = [
     "sqlalchemy[asyncio]>=2",
     "sqlmodel>=0.0.25",
 ]
+docs = ["zensical==0.0.71"]
+
+[tool.uv]
+exclude-newer = "2026-10-28T00:00:00Z"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -66,6 +74,9 @@ markers = [
 line-length = 88
 target-version = "py311"
 
+[tool.ruff.format]
+exclude = ["docs/**/*.md"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
 
@@ -74,7 +85,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src", "tests"]
+files = ["src", "tests", "docs_src"]
 warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = true

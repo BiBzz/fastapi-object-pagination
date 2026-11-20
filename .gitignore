@@ -16,3 +16,7 @@ wheels/
 
 # Profiler output
 gmon.out
+
+# Documentation site build
+site/
+.cache/

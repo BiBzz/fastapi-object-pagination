@@ -42,6 +42,22 @@ CI replays them on Python 3.11, 3.12 and 3.13, so a failure that only
 shows up on a newer interpreter comes back from the pull request rather than
 from your machine.
 
+## The documentation
+
+The site at <https://fastapi-object-pagination.businessagile.eu> is built with
+[zensical](https://zensical.org) from `mkdocs.yml` and `docs/`, on every merge
+request, and published from `development` by GitLab Pages:
+
+```bash
+uv sync --group docs
+uv run zensical serve
+```
+
+Every code example of the site lives in `docs_src/` and is pulled into the
+pages with `--8<--`; a test of `tests/test_tutorial/` runs it, and compares the
+JSON and Cypher the pages show with what the code produces. When an example
+changes, its test changes in the same merge request.
+
 ## Commits
 
 Work branches off `development`, the default branch. Everything in the

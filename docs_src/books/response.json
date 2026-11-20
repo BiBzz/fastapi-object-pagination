@@ -1,0 +1,12 @@
+{
+  "items": [
+    {"author": "Jane Austen", "title": "Emma", "id": 4, "year": 1815},
+    {"author": "Jane Austen", "title": "Mansfield Park", "id": 3, "year": 1814}
+  ],
+  "item_count": 6,
+  "page_count": 3,
+  "current_page": 2,
+  "items_by_page": 2,
+  "previous_page_url": "?current_page=1&items_by_page=2",
+  "next_page_url": "?current_page=3&items_by_page=2"
+}
