@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 from importlib.metadata import PackageNotFoundError, version
 
 
-class ORM(str, Enum):
+class ORM(StrEnum):
     NEONTOLOGY = "neontology"
     SQLMODEL = "sqlmodel"
 

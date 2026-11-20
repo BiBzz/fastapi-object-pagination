@@ -7,6 +7,16 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Removed
+
+- Support for Python 3.10, which reached its end of life in October 2026.
+  Python 3.11 is now the minimum.
+
+### Changed
+
+- `ORM` is a `StrEnum`: `str(ORM.SQLMODEL)` now returns `"sqlmodel"`, like
+  its value, instead of `"ORM.SQLMODEL"`.
+
 ## [0.1.1] - 2026-10-28
 
 First version published on PyPI. 0.1.0 only ever existed in the internal

@@ -38,7 +38,7 @@ uv run mypy
 uv run pytest -q
 ```
 
-CI replays them on Python 3.10, 3.11, 3.12 and 3.13, so a failure that only
+CI replays them on Python 3.11, 3.12 and 3.13, so a failure that only
 shows up on a newer interpreter comes back from the pull request rather than
 from your machine.
 

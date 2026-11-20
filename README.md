@@ -179,7 +179,7 @@ On PostgreSQL the `in` lookup is compiled to `= ANY(ARRAY[...])` instead of
 
 | | |
 |---|---|
-| Python | 3.10, 3.11, 3.12, 3.13 |
+| Python | 3.11, 3.12, 3.13 |
 | Pydantic | 2.x |
 | SQLModel | >= 0.0.25, with an async engine (`sqlmodel.ext.asyncio.session.AsyncSession`) |
 | Neontology | >= 2.2.2 |
